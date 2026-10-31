@@ -1,0 +1,10 @@
+{
+  "mode": "distilled",
+  "model": "merged_fp16_6000_cont2",
+  "n": 300,
+  "accuracy": 0.5033,
+  "ci_lo": 0.45,
+  "ci_hi": 0.5633,
+  "correct": 151,
+  "wrong": 149
+}

@@ -1,0 +1,10 @@
+{
+  "mode": "baseline",
+  "model": "Qwen/Qwen3.5-0.8B",
+  "n": 300,
+  "accuracy": 0.3233,
+  "ci_lo": 0.2733,
+  "ci_hi": 0.38,
+  "correct": 97,
+  "wrong": 203
+}
