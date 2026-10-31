@@ -29,23 +29,31 @@ An interview-ready showcase demonstrating how to distill Chain-of-Thought (CoT) 
 ## 🏗️ Architecture & Distillation Pipeline
 
 ```mermaid
-flowchart TD
-    A["Verified Teacher Dataset<br/>(6,037 GSM8K CoT Traces)"] --> B["Chat Template Formatting<br/>(System + Question + Teacher Trace)"]
-    B --> C["Label Masking<br/>(Prompt Tokens = -100)"]
-    C --> D["Dynamic Collator<br/>(Padded to multiple of 8)"]
-    
-    E["Base Student Model<br/>(Qwen3.5-0.8B)"] --> F["4-Bit NF4 Quantization<br/>(BitsAndBytesConfig)"]
-    F --> G["LoRA Adapters (r=16, alpha=32)<br/>(All Linear Projections)"]
-    
-    D --> H["Progressive Multi-Stage Training<br/>(Accelerate 2x GPU DDP)"]
+graph TD
+    subgraph Data_Prep ["1. Data Preparation and Loss Masking"]
+        A["Verified Teacher Dataset (6,037 CoT Traces)"] --> B["Chat Template Formatting (System + User + Teacher)"]
+        B --> C["Label Masking (Prompt Tokens = -100)"]
+        C --> D["Dynamic Collator (Padded to Multiple of 8)"]
+    end
+
+    subgraph Model_Config ["2. Efficient Architecture (QLoRA)"]
+        E["Base Student Model (Qwen3.5-0.8B)"] --> F["4-Bit NF4 Quantization + Double Quant"]
+        F --> G["LoRA Adapters (r=16, alpha=32 on all Linear Projections)"]
+    end
+
+    D --> H["Distributed DDP Training (2x GPU via Accelerate)"]
     G --> H
-    
-    H --> I["Stage 1: 1.0 ep @ 1e-4<br/>(Loss: 1.21 -> 0.45)"]
-    I --> J["Stage 2: 0.5 ep @ 5e-5<br/>(Loss: 0.45 -> 0.38)"]
-    J --> K["Stage 3: 0.5 ep @ 2e-5<br/>(Loss: 0.38 -> 0.33)"]
-    
-    K --> L["merge_and_unload()<br/>(Zero runtime inference overhead)"]
-    L --> M["Standalone FP16 Model & GGUF Q4_K_M"]
+
+    subgraph Training_Curriculum ["3. Multi-Stage Learning Rate Annealing"]
+        H --> I["Stage 1: 1.0 epoch at lr 1e-4 (Loss: 1.21 to 0.45)"]
+        I --> J["Stage 2: 0.5 epoch at lr 5e-5 (Loss: 0.45 to 0.38)"]
+        J --> K["Stage 3: 0.5 epoch at lr 2e-5 (Loss: 0.38 to 0.33)"]
+    end
+
+    subgraph Model_Export ["4. Zero-Overhead Deployment"]
+        K --> L["merge_and_unload: Fuses LoRA Adapter into Base"]
+        L --> M["Standalone FP16 Model and 4-Bit GGUF (Q4_K_M)"]
+    end
 ```
 
 ---
